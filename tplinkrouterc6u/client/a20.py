@@ -13,12 +13,16 @@ class TplinkA20Router(TplinkRouter):
     _encryption = EncryptionWrapper()
 
     def logout(self) -> None:
-        self.request("admin/system?form=logout", data={"operation": "write"})
+        self.request(
+            "admin/system?form=logout",
+            data={"operation": "write"},
+            ignore_response=True,
+        )
 
-    def status(self):
+    def get_status(self):
         return self.request("admin/status?form=all", data={"operation": "read"})
 
-    def parental_controls_list(self):
+    def get_parental_controls_list(self):
         return self.request(
             "admin/smart_network?form=patrol_owner_list", data={"operation": "load"}
         )
