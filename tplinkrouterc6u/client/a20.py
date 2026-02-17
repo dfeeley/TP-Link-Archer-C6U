@@ -12,6 +12,78 @@ class TplinkA20Router(TplinkRouter):
     _pwdEE = ""
     _encryption = EncryptionWrapper()
 
+    def logout(self) -> None:
+        self.request("admin/system?form=logout", data={"operation": "write"})
+
+    def status(self):
+        return self.request("admin/status?form=all", data={"operation": "read"})
+
+    def parental_controls_list(self):
+        return self.request(
+            "admin/smart_network?form=patrol_owner_list", data={"operation": "load"}
+        )
+
+    def block_internet(self, profile_id: int, block: bool):
+        return self.request(
+            "admin/smart_network?form=patrol_owner_block",
+            data={
+                "operation": "write",
+                "owner_id": profile_id,
+                "internet_blocked": block,
+            },
+        )
+
+    def request(
+        self,
+        path: str,
+        data: str,
+        ignore_response: bool = False,
+        ignore_errors: bool = False,
+    ) -> dict | None:
+        if self._logged is False:
+            raise Exception("Not authorised")
+        url = "{}/cgi-bin/luci/;stok={}/{}".format(self.host, self._stok, path)
+
+        response = post(
+            url,
+            data=data,
+            headers=self._headers_request,
+            cookies={"sysauth": self._sysauth},
+            timeout=self.timeout,
+            verify=self._verify_ssl,
+        )
+
+        if ignore_response:
+            return None
+
+        data = response.text
+        error = ""
+        try:
+            data = response.json()
+            if "data" not in data:
+                raise Exception("Router didn't respond with JSON")
+
+            if self._is_valid_response(data):
+                return data.get(self._data_block)
+            elif ignore_errors:
+                return data
+        except Exception as e:
+            error = "TplinkRouter - {} - An unknown response - {}; Request {} - Response {}".format(
+                self.__class__.__name__, e, path, data
+            )
+        error = (
+            (
+                "TplinkRouter - {} - Response with error; Request {} - Response {}".format(
+                    self.__class__.__name__, path, data
+                )
+            )
+            if not error
+            else error
+        )
+        if self._logger:
+            self._logger.debug(error)
+        raise ClientException(error)
+
     def supports(self) -> bool:
         if len(self.password) > 125:
             return False
