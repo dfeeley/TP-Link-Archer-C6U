@@ -35,6 +35,7 @@ class TplinkA20Router(TplinkRouter):
                 "owner_id": profile_id,
                 "internet_blocked": block,
             },
+            ignore_response=True,
         )
 
     def request(
