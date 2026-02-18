@@ -159,6 +159,7 @@ class TplinkA20Router(TplinkRouter):
             "operation": "login",
             "username": self.username,
             "password": crypted_pwd,
+            "confirm": "true",  # if existing login, confirm force them out
         }
 
         return post(
